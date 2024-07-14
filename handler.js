@@ -19,7 +19,7 @@ function handleMessage(ws, message, wss) {
         case 'getUserOnlines':
             handleGetUserOnlines(ws, parsedMessage, wss);
             break;
-         case 'chatgroup': // Add case for chatgroup
+        case 'chatgroup': // Add case for chatgroup
             handleChatGroup(ws, parsedMessage, wss);
             break;
         default:
@@ -39,10 +39,12 @@ function handleSubscribe(ws, parsedMessage) {
     ws.post_ID = parsedMessage.post_ID;
     // Trạng thái hoạt động
     ws.user_online = parsedMessage.user_online;
-     // Dành cho group chat
+    // Dành cho group chat
     ws.user_group_from = parsedMessage.user_group_from;
     ws.group_id = parsedMessage.group_id;
-    console.log( "Nhóm chat đăng ký :",ws.user_group_from , ws.group_id);
+    ws.chat_group_from = parsedMessage.chat_group_from;
+    console.log("Nhóm chat đăng ký :", ws.user_group_from, ws.group_id);
+    console.log("ChatBox :", ws.chat_group_from);
 }
 
 // Xử lý tin nhắn comment
@@ -98,12 +100,19 @@ function handleGetUserOnlines(ws, parsedMessage, wss) {
 
 function handleChatGroup(ws, parsedMessage, wss) {
     console.log('Received chatgroup message:', parsedMessage);
-    console.log('cua group:', parsedMessage.group_id);
-    console.log('mảng :', parsedMessage.userIds);// Log received message
+    console.log('Của group:', parsedMessage.group_id);
+    console.log('Mảng userIds:', parsedMessage.userIds); // Log received message
+
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN && client.group_id === parsedMessage.group_id) {
             client.send(JSON.stringify(parsedMessage)); 
-            console.log('Gui thong bao cho client:', client.group_id,"và người dùng :",client.user_group_from);
+            console.log('Gửi thông báo cho client:', client.group_id, "và người dùng:", client.user_group_from);
+        }
+        
+        // Kiểm tra xem ws.chat_group_from có nằm trong mảng userIds không
+        if (parsedMessage.userIds.includes(parseInt(client.chat_group_from))) {
+            client.send(JSON.stringify(parsedMessage));
+            console.log('Gửi thông báo cho chatbox:', client.chat_group_from);
         }
     });
 }
